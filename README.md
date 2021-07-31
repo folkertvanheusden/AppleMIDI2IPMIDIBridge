@@ -5,7 +5,10 @@ mdns_rtpmidi.hpp and mdns_rtpmidi.cpp are from https://github.com/davidmoreno/rt
 
 building
 --------
-Install rtpmidid (especially its 'dev' library), then:
+Install rtpmidid (especially its 'dev' library) from:
+https://github.com/davidmoreno/rtpmidid
+
+Then:
 
 * make build
 * cd build

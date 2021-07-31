@@ -20,5 +20,10 @@ usage
 to see a list of options.
 
 
+
+![example](imgs/patches.png)
+
+
+
 (c) 2021 by Folkert van Heusden <mail@vanheusden.com>
 Licensed under GPL v3.0.

@@ -67,7 +67,6 @@ void i2a_thread(const int fd, rtpmidid::rtpserver *const am, std::atomic_uint32_
 
 void usage()
 {
-	printf("-c x   read the following configuration parameters from a file\n");
 	printf("-p x   port to listen on for AppleMidi (RTPMIDI, hopefully no need to configure this)\n");
 	printf("-a x   IPv4 multicast address for ipmidi\n");
 	printf("-P x   multicast port for ipmidi\n");
@@ -81,42 +80,11 @@ int main(int argc, char *argv[])
 	std::string port = "15117", name = "AppleMidi2IPMidiBridge";
 	const char *ipmidi_addr = "225.0.0.37";
 	int ipmidi_port = 21928;
-	const char *cfg_file = nullptr;
+	const char *cfg_file = "/etc/a2im.cfg";
 	bool do_fork = false;
 
-	int c = -1;
-	while((c = getopt(argc, argv, "c:p:a:P:fVh")) != -1) {
-		if (c == 'c')
-			cfg_file = optarg;
-		else if (c == 'p')
-			port = optarg;
-		else if (c == 'a')
-			ipmidi_addr = optarg;
-		else if (c == 'P')
-			ipmidi_port = atoi(optarg);
-		else if (c == 'f')
-			do_fork = true;
-		else if (c == 'V') {
-			printf("%s (C) 2021 by Folkert van Heusden\n", name.c_str());
-			return 0;
-		}
-		else if (c == 'h') {
-			usage();
-			return 0;
-		}
-		else {
-			usage();
-			return 1;
-		}
-	}
-
-	if (cfg_file) {
-		FILE *fh = fopen(cfg_file, "r");
-		if (!fh) {
-			perror("fopen");
-			return 1;
-		}
-
+	FILE *fh = fopen(cfg_file, "r");
+	if (fh) {
 		for(;;) {
 			char buffer[1024];
 
@@ -157,6 +125,30 @@ int main(int argc, char *argv[])
 		}
 
 		fclose(fh);
+	}
+
+	int c = -1;
+	while((c = getopt(argc, argv, "p:a:P:fVh")) != -1) {
+		if (c == 'p')
+			port = optarg;
+		else if (c == 'a')
+			ipmidi_addr = optarg;
+		else if (c == 'P')
+			ipmidi_port = atoi(optarg);
+		else if (c == 'f')
+			do_fork = true;
+		else if (c == 'V') {
+			printf("%s (C) 2021 by Folkert van Heusden\n", name.c_str());
+			return 0;
+		}
+		else if (c == 'h') {
+			usage();
+			return 0;
+		}
+		else {
+			usage();
+			return 1;
+		}
 	}
 
 	int fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);

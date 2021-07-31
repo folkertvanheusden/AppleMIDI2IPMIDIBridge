@@ -31,3 +31,26 @@ target_include_directories(a2im PUBLIC ${FMT_INCLUDE_DIRS})
 target_compile_options(a2im PUBLIC ${FMT_CFLAGS_OTHER})
 
 set_target_properties(a2im PROPERTIES OUTPUT_NAME a2im)
+
+install(TARGETS a2im
+    COMPONENT a2im
+    RUNTIME DESTINATION "/usr/bin/"
+)
+
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/a2im.service"
+        DESTINATION "/lib/systemd/system/"
+        COMPONENT "a2im")
+
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/a2im.cfg"
+        DESTINATION "/etc"
+        COMPONENT "a2im")
+
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE" "${CMAKE_CURRENT_SOURCE_DIR}/README.md" "${CMAKE_CURRENT_SOURCE_DIR}/example.cfg"
+        DESTINATION "/usr/share/a2im"
+        COMPONENT "a2im")
+
+SET(CPACK_GENERATOR "DEB")
+SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Folkert van Heusden <mail@vanheusden.com>")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "librtpmidid0, librtpmidid0-dev")
+set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/postinst")
+include(CPack)

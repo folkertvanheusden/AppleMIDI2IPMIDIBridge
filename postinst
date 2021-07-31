@@ -1,0 +1,4 @@
+#! /bin/sh
+
+/usr/bin/systemctl enable a2im
+/usr/bin/systemctl start a2im

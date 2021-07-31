@@ -1,0 +1,8 @@
+[Unit]
+Description=AppleMidi2IPMidiBridge
+
+[Service]
+ExecStart=/usr/bin/a2im
+
+[Install]
+WantedBy=multi-user.target

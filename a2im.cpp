@@ -188,6 +188,11 @@ int main(int argc, char *argv[])
 	if ((setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&flag_on, sizeof(flag_on))) == -1)
 		perror("setsockopt(SO_REUSEADDR)");
 
+	if (do_fork && daemon(-1, -1) == -1) {
+		perror("daemon");
+		return 1;
+	}
+
 	rtpmidid::mdns_rtpmidi mdns_rtpmidi;
 
 	rtpmidid::rtpserver *am = new rtpmidid::rtpserver(name, port);
@@ -205,11 +210,6 @@ int main(int argc, char *argv[])
 
 	std::atomic_uint32_t i2a_counter { 0 };
 	std::thread i2a(i2a_thread, fd, am, &i2a_counter);
-
-	if (do_fork && daemon(0, 0) == -1) {
-		perror("daemon");
-		return 1;
-	}
 
 	for(;;) {
 		sleep(1);

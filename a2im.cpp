@@ -1,3 +1,4 @@
+#include <atomic>
 #include <stdio.h>
 #include <string_view>
 #include <thread>
@@ -24,9 +25,9 @@ void poller_thread()
 		rtpmidid::poller.wait();
 }
 
-void a2i_thread(rtpmidid::rtpserver *const am, const int fd, const struct sockaddr_in *const ipmidi_mc_addr)
+void a2i_thread(rtpmidid::rtpserver *const am, const int fd, const struct sockaddr_in *const ipmidi_mc_addr, std::atomic_uint32_t *const counter)
 {
-	am->midi_event.connect([fd, ipmidi_mc_addr](rtpmidid::io_bytes_reader buffer) {
+	am->midi_event.connect([fd, ipmidi_mc_addr, counter](rtpmidid::io_bytes_reader buffer) {
 			size_t len = buffer.size();
 
 			uint8_t *msg = (uint8_t *)malloc(len);
@@ -34,10 +35,10 @@ void a2i_thread(rtpmidid::rtpserver *const am, const int fd, const struct sockad
 			for(size_t i=0; i<len; i++)
 			msg[i] = buffer.read_uint8();
 
-			printf("a2i_thread: receive\n");
-
 			if (sendto(fd, msg, len, 0, (struct sockaddr *)ipmidi_mc_addr, sizeof(*ipmidi_mc_addr)) == -1)
 				perror("sendto");
+
+			(*counter)++;
 
 			free(msg);
 			});
@@ -46,7 +47,7 @@ void a2i_thread(rtpmidid::rtpserver *const am, const int fd, const struct sockad
 		sleep(1);
 }
 
-void i2a_thread(const int fd, rtpmidid::rtpserver *const am)
+void i2a_thread(const int fd, rtpmidid::rtpserver *const am, std::atomic_uint32_t *const counter)
 {
 	uint8_t buffer[128];  // more is silly
 
@@ -58,9 +59,9 @@ void i2a_thread(const int fd, rtpmidid::rtpserver *const am)
 			exit(1);
 		}
 
-		printf("i2a_thread: receive\n");
-
 		send(am, buffer, recv_len);
+
+		(*counter)++;
 	}
 }
 
@@ -142,12 +143,17 @@ int main(int argc, char *argv[])
 
 	std::thread poller(poller_thread);
 
-	std::thread a2i(a2i_thread, am, fd, &ipmidi_mc_addr);
+	std::atomic_uint32_t a2i_counter { 0 };
+	std::thread a2i(a2i_thread, am, fd, &ipmidi_mc_addr, &a2i_counter);
 
-	std::thread i2a(i2a_thread, fd, am);
+	std::atomic_uint32_t i2a_counter { 0 };
+	std::thread i2a(i2a_thread, fd, am, &i2a_counter);
 
-	for(;;)
+	for(;;) {
 		sleep(1);
+
+		printf("a2i: %u, i2a: %u\n", a2i_counter.load(), i2a_counter.load());
+	}
 
 	return 0;
 }

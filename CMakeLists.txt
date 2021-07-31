@@ -1,6 +1,6 @@
 project(a2im)
 cmake_minimum_required(VERSION 3.2)
-add_definitions("-std=gnu++17 -Wall -Werror")
+add_definitions("-std=gnu++17 -Wall -pedantic -Werror")
 
 set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fstack-protector-strong")
 set (CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer")

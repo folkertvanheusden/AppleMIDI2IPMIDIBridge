@@ -67,27 +67,35 @@ void i2a_thread(const int fd, rtpmidid::rtpserver *const am, std::atomic_uint32_
 
 void usage()
 {
+	printf("-c x   read the following configuration parameters from a file\n");
 	printf("-p x   port to listen on for AppleMidi (RTPMIDI, hopefully no need to configure this)\n");
 	printf("-a x   IPv4 multicast address for ipmidi\n");
 	printf("-P x   multicast port for ipmidi\n");
+	printf("-f     fork into the background (become daemon)\n");
 	printf("-V     show version\n");
 	printf("-h     this help\n");
 }
 
 int main(int argc, char *argv[])
 {
-	std::string port = "15115", name = "AppleMidi2IPMidiBridge";
+	std::string port = "15117", name = "AppleMidi2IPMidiBridge";
 	const char *ipmidi_addr = "225.0.0.37";
 	int ipmidi_port = 21928;
+	const char *cfg_file = nullptr;
+	bool do_fork = false;
 
 	int c = -1;
-	while((c = getopt(argc, argv, "p:a:P:Vh")) != -1) {
-		if (c == 'p')
+	while((c = getopt(argc, argv, "c:p:a:P:fVh")) != -1) {
+		if (c == 'c')
+			cfg_file = optarg;
+		else if (c == 'p')
 			port = optarg;
 		else if (c == 'a')
 			ipmidi_addr = optarg;
 		else if (c == 'P')
 			ipmidi_port = atoi(optarg);
+		else if (c == 'f')
+			do_fork = true;
 		else if (c == 'V') {
 			printf("%s (C) 2021 by Folkert van Heusden\n", name.c_str());
 			return 0;
@@ -100,6 +108,55 @@ int main(int argc, char *argv[])
 			usage();
 			return 1;
 		}
+	}
+
+	if (cfg_file) {
+		FILE *fh = fopen(cfg_file, "r");
+		if (!fh) {
+			perror("fopen");
+			return 1;
+		}
+
+		for(;;) {
+			char buffer[1024];
+
+			if (fgets(buffer, sizeof buffer, fh) == nullptr)
+				break;
+
+			if (buffer[0] == '#' || buffer[0] == 0x00 || buffer[0] == ';' || buffer[0] == ' ')
+				continue;
+
+			char *lf = strchr(buffer, '\n');
+			if (lf)
+				*lf = 0x00;
+			char *cr = strchr(buffer, '\r');
+			if (cr)
+				*cr = 0x00;
+
+			char *is = strchr(buffer, '=');
+			if (!is) {
+				printf("Invalid configuration file line: %s\n", buffer);
+				return 1;
+			}
+
+			*is = 0x00;
+			char *par = is + 1;
+
+			if (strcmp(buffer, "rtpmidi-port") == 0)
+				port = par;
+			else if (strcmp(buffer, "multicast-addr") == 0)
+				ipmidi_addr = strdup(par);
+			else if (strcmp(buffer, "multicast-port") == 0)
+				ipmidi_port = atoi(par);
+			else if (strcmp(buffer, "fork") == 0)
+				do_fork = atoi(par);
+			else {
+				printf("\"%s\" is not understood\n", buffer);
+				return 1;
+			}
+		}
+
+		fclose(fh);
 	}
 
 	int fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -148,6 +205,11 @@ int main(int argc, char *argv[])
 
 	std::atomic_uint32_t i2a_counter { 0 };
 	std::thread i2a(i2a_thread, fd, am, &i2a_counter);
+
+	if (do_fork && daemon(0, 0) == -1) {
+		perror("daemon");
+		return 1;
+	}
 
 	for(;;) {
 		sleep(1);

@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 	std::thread i2a(i2a_thread, fd, am, &i2a_counter);
 
 	for(;;) {
-		sleep(1);
+		sleep(5);
 
 		printf("a2i: %u, i2a: %u\n", a2i_counter.load(), i2a_counter.load());
 	}
